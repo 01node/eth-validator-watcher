@@ -27,6 +27,7 @@ def test_fee_recipient_set_while_execution_url_not_set() -> None:
             beacon_type=BeaconType.OLD_TEKU,
             relays_url=[],
             liveness_file=None,
+            export_key_specific_values=True
         )
 
 
@@ -42,6 +43,7 @@ def test_fee_recipient_not_valid() -> None:
             beacon_type=BeaconType.OLD_TEKU,
             relays_url=[],
             liveness_file=None,
+            export_key_specific_values=True
         )
 
 
@@ -57,6 +59,7 @@ def test_slack_token_not_defined() -> None:
             beacon_type=BeaconType.OLD_TEKU,
             relays_url=[],
             liveness_file=None,
+            export_key_specific_values=True
         )
 
 
@@ -100,6 +103,7 @@ def test_invalid_pubkeys() -> None:
             beacon_type=BeaconType.OLD_TEKU,
             relays_url=[],
             liveness_file=None,
+            export_key_specific_values=True
         )
 
 
@@ -149,6 +153,7 @@ def test_chain_not_ready() -> None:
         beacon_type=BeaconType.OLD_TEKU,
         relays_url=[],
         liveness_file=Path("/path/to/liveness"),
+        export_key_specific_values=True
     )
 
 
@@ -370,6 +375,7 @@ def test_nominal() -> None:
         beacon_type=BeaconType.OLD_TEKU,
         relays_url=["http://my-awesome-relay.com"],
         liveness_file=Path("/path/to/liveness"),
+        export_key_specific_values=True
     )
 
     assert Coinbase.nb_calls == 2
