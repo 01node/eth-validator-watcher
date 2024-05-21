@@ -3,6 +3,7 @@
 import functools
 
 from prometheus_client import Gauge, Counter
+from requests.exceptions import HTTPError, RequestException
 
 from .beacon import Beacon
 from .utils import NB_SLOT_PER_EPOCH
@@ -47,13 +48,24 @@ def process_future_blocks_proposal(
             initialized_keys.remove(_key)
             key_future_block_proposals_count.remove(pubkey=_key)
 
-    epoch = slot // NB_SLOT_PER_EPOCH
-    proposers_duties_current_epoch = beacon.get_proposer_duties(epoch)
-    proposers_duties_next_epoch = beacon.get_proposer_duties(epoch + 1)
+    try:
+        epoch = slot // NB_SLOT_PER_EPOCH
+        proposers_duties_current_epoch = beacon.get_proposer_duties(epoch)
+        proposers_duties_next_epoch = beacon.get_proposer_duties(epoch + 1)
 
-    concatenated_data = (
-        proposers_duties_current_epoch.data + proposers_duties_next_epoch.data
-    )
+        concatenated_data = (
+                proposers_duties_current_epoch.data + proposers_duties_next_epoch.data
+        )
+    except HTTPError as http_err:
+        print(f"HTTP error occurred: {http_err} - Failed to get proposer duties for epoch {epoch} or {epoch + 1}.")
+        concatenated_data = []  # Assign an empty list or handle appropriately
+    except RequestException as req_err:
+        print(
+            f"Error occurred during network request: {req_err} - Failed to get proposer duties for epoch {epoch} or {epoch + 1}.")
+        concatenated_data = []  # Assign an empty list or handle appropriately
+    except Exception as e:
+        print(f"Unexpected error: {e} - Failed to get proposer duties for epoch {epoch} or {epoch + 1}.")
+        concatenated_data = []  # Assign an empty list or handle appropriately
 
     filtered = [
         item

@@ -14,6 +14,7 @@ from typing import List, Optional
 import typer
 from prometheus_client import Gauge, start_http_server
 from typer import Option
+from requests.exceptions import HTTPError, RequestException
 
 from .beacon import Beacon
 from .coinbase import Coinbase
@@ -308,7 +309,19 @@ def _handler(
 
             # Network validators
             # ------------------
-            net_status2idx2val = beacon.get_status_to_index_to_validator()
+            try:
+                net_status2idx2val = beacon.get_status_to_index_to_validator()
+            except HTTPError as http_err:
+                print(
+                    f"HTTP error occurred: {http_err} - Failed to get status to index to validator. Retrying next epoch.")
+                net_status2idx2val = {}  # Assign an empty dictionary or handle appropriately
+            except RequestException as req_err:
+                print(
+                    f"Error occurred during network request: {req_err} - Failed to get status to index to validator. Retrying next epoch.")
+                net_status2idx2val = {}  # Assign an empty dictionary or handle appropriately
+            except Exception as e:
+                print(f"Unexpected error: {e} - Failed to get status to index to validator. Retrying next epoch.")
+                net_status2idx2val = {}  # Assign an empty dictionary or handle appropriately
 
             net_pending_q_idx2val = net_status2idx2val.get(Status.pendingQueued, {})
             nb_total_pending_q_vals = len(net_pending_q_idx2val)
@@ -446,14 +459,39 @@ def _handler(
 
         process_future_blocks_proposal(beacon, our_pubkeys, slot, is_new_epoch)
 
-        last_processed_finalized_slot = process_missed_blocks_finalized(
-            beacon, last_processed_finalized_slot, slot, our_pubkeys, slack
-        )
+        try:
+            last_processed_finalized_slot = process_missed_blocks_finalized(
+                beacon, last_processed_finalized_slot, slot, our_pubkeys, slack
+            )
+        except HTTPError as http_err:
+            print(
+                f"HTTP error occurred: {http_err} - Failed to process missed blocks finalized for slot {slot}. Retrying next slot.")
+        except RequestException as req_err:
+            print(
+                f"Error occurred during network request: {req_err} - Failed to process missed blocks finalized for slot {slot}. Retrying next slot.")
+        except Exception as e:
+            print(
+                f"Unexpected error: {e} - Failed to process missed blocks finalized for slot {slot}. Retrying next slot.")
 
         delta_sec = MISSED_BLOCK_TIMEOUT_SEC - (time() - slot_start_time_sec)
         sleep(max(0, delta_sec))
 
-        potential_block = beacon.get_potential_block(slot)
+        try:
+            potential_block = beacon.get_potential_block(slot)
+        except HTTPError as http_err:
+            # Handle specific HTTP errors
+            print(
+                f"HTTP error occurred: {http_err} - Failed to fetch potential block for slot {slot}. Retrying next slot.")
+            potential_block = None  # Assign None to potential_block or handle as appropriate
+        except RequestException as req_err:
+            # Handle general network request errors
+            print(
+                f"Error occurred during network request: {req_err} - Failed to fetch potential block for slot {slot}. Retrying next slot.")
+            potential_block = None  # Assign None to potential_block or handle as appropriate
+        except Exception as e:
+            # Handle unexpected exceptions
+            print(f"Unexpected error: {e} - Failed to fetch potential block for slot {slot}. Retrying next slot.")
+            potential_block = None  # Assign None to potential_block or handle as appropriate
 
         if potential_block is not None:
             block = potential_block
