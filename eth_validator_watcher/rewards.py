@@ -1,6 +1,7 @@
 """Contains functions to handle rewards calculation"""
 
 from typing import Tuple
+from requests.exceptions import HTTPError, RequestException
 
 from prometheus_client import Counter, Gauge
 
@@ -219,7 +220,21 @@ def process_rewards(
     if len(net_index_to_validator) == 0:
         return
 
-    data = beacon.get_rewards(beacon_type, epoch - 2).data
+    try:
+        # Attempt to fetch the rewards data
+        data = beacon.get_rewards(beacon_type, epoch - 2).data
+    except HTTPError as http_err:
+        # Handle specific HTTP errors, such as 502 Bad Gateway
+        print(f"HTTP error occurred: {http_err} - Failed to fetch rewards for epoch {epoch - 2}. Retrying next epoch.")
+        return None  # Optionally, you can decide what to return based on your application's logic
+    except RequestException as req_err:
+        # Handle general network request errors (e.g., DNS failure, refused connection)
+        print(f"Error occurred during network request: {req_err} - Failed to fetch rewards for epoch {epoch - 2}. Retrying next epoch.")
+        return None
+    except Exception as e:
+        # Handle any other unexpected exceptions
+        print(f"Unexpected error: {e} - Failed to fetch rewards for epoch {epoch - 2}. Retrying next epoch.")
+        return None
 
     effective_balance_to_ideal_reward: dict[int, Reward] = {
         reward.effective_balance: (reward.source, reward.target, reward.head)
@@ -328,7 +343,22 @@ def process_rewards(
     if len(our_indexes) == 0:
         return
 
-    data = beacon.get_rewards(beacon_type, epoch - 2, our_indexes).data
+    try:
+        data = beacon.get_rewards(beacon_type, epoch - 2, our_indexes).data
+    except HTTPError as http_err:
+        # Specific handling for HTTP errors (e.g., 502 Bad Gateway)
+        print(
+            f"HTTP error occurred: {http_err} - Failed to fetch rewards for epoch {epoch - 2}. Retrying next epoch.")
+        return
+    except RequestException as req_err:
+        # General network request errors (e.g., DNS failure, refused connection)
+        print(
+            f"Error occurred during network request: {req_err} - Failed to fetch rewards for epoch {epoch - 2}. Retrying next epoch.")
+        return
+    except Exception as e:
+        # Any other exceptions
+        print(f"Unexpected error: {e} - Failed to fetch rewards for epoch {epoch - 2}. Retrying next epoch.")
+        return
 
     effective_balance_to_ideal_reward = {
         reward.effective_balance: (reward.source, reward.target, reward.head)

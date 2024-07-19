@@ -3,6 +3,7 @@
 import functools
 
 from prometheus_client import Gauge
+from requests.exceptions import HTTPError, RequestException
 
 from eth_validator_watcher.models import BeaconType
 
@@ -76,9 +77,22 @@ def process_missed_attestations(
     )
 
     validators_index = set(index_to_validator)
-    validators_liveness = beacon.get_validators_liveness(
-        beacon_type, epoch - 1, validators_index
-    )
+    try:
+        validators_liveness = beacon.get_validators_liveness(
+            beacon_type, epoch - 1, validators_index
+        )
+    except HTTPError as http_err:
+        # Handle specific HTTP errors
+        print(f"HTTP error occurred: {http_err} - Failed to fetch validator liveness for epoch {epoch - 1}. Retrying next epoch.")
+        return set()  # Return an empty set or handle as appropriate for your use case
+    except RequestException as req_err:
+        # Handle general network request errors
+        print(f"Error occurred during network request: {req_err} - Failed to fetch validator liveness for epoch {epoch - 1}. Retrying next epoch.")
+        return set()  # Return an empty set or handle as appropriate for your use case
+    except Exception as e:
+        # Handle unexpected exceptions
+        print(f"Unexpected error: {e} - Failed to fetch validator liveness for epoch {epoch - 1}. Retrying next epoch.")
+        return set()
 
     dead_indexes = {
         index for index, liveness in validators_liveness.items() if not liveness
