@@ -63,14 +63,22 @@ class SlashedValidators:
             key  : our withdrawal validator index
             value: validator data corresponding to the validator index
         """
-        for _key in _initialized_keys:
-            if _key not in initialized_keys:
-                key_slashed_validators_count.labels(pubkey=_key)
-                initialized_keys.add(_key)
-        for _key in initialized_keys:
-            if _key not in _initialized_keys:
-                initialized_keys.remove(_key)
-                key_slashed_validators_count.remove(pubkey=_key)
+        if _initialized_keys is None:
+            _initialized_keys = set()
+
+        # Collect keys to add and remove
+        keys_to_add = [key for key in _initialized_keys if key not in initialized_keys]
+        keys_to_remove = [key for key in initialized_keys if key not in _initialized_keys]
+
+        # Add new keys
+        for _key in keys_to_add:
+            key_slashed_validators_count.labels(pubkey=_key)
+            initialized_keys.add(_key)
+
+        # Remove old keys
+        for _key in keys_to_remove:
+            initialized_keys.remove(_key)
+            key_slashed_validators_count.remove(_key)
 
         total_slashed_withdrawal_index_to_validator = {
             index

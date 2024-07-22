@@ -27,6 +27,7 @@ def process_fee_recipient(
     execution: Execution | None,
     expected_fee_recipient: str | None,
     slack: Slack | None,
+    _initialized_keys: set[str] = None,  # Ensure default is set to None
 ) -> None:
     """Check if the fee recipient is the one expected.
 
@@ -39,6 +40,8 @@ def process_fee_recipient(
     expected_fee_recipient: The expected fee recipient
     slack                 : Optional slack client
     """
+    if _initialized_keys is None:
+        _initialized_keys = set()
 
     for _idx in index_to_validator:
         if index_to_validator[_idx].pubkey not in initialized_keys:
@@ -46,15 +49,13 @@ def process_fee_recipient(
                 pubkey=index_to_validator[_idx].pubkey
             )
             initialized_keys.add(index_to_validator[_idx].pubkey)
-    for _key in initialized_keys:
-        found = False
-        for _idx in index_to_validator:
-            if index_to_validator[_idx].pubkey == _key:
-                found = True
-                break
-        if not found:
-            key_wrong_fee_recipient_proposed_block_count.remove(_key)
-            initialized_keys.remove(_key)
+
+    # Collect keys to remove
+    keys_to_remove = [key for key in initialized_keys if key not in _initialized_keys]
+
+    for _key in keys_to_remove:
+        initialized_keys.remove(_key)
+        key_wrong_fee_recipient_proposed_block_count.remove(_key)
 
 
     # No expected fee recipient set, nothing to do

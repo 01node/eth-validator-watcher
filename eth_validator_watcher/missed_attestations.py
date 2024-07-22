@@ -59,6 +59,9 @@ def process_missed_attestations(
     if epoch < 1:
         return set()
 
+    if _initialized_keys is None:
+        _initialized_keys = set()
+
     for _key in _initialized_keys:
         if _key not in initialized_keys:
             key_missed_attestations_count.labels(pubkey=_key)

@@ -30,6 +30,7 @@ def test_process_rewards_low_epoch() -> None:
             epoch,
             LimitedDict(2),
             LimitedDict(2),
+            set()  # Add this line to pass the `_initialized_keys` parameter
         )
 
 
@@ -43,10 +44,11 @@ def test_process_rewards_no_network_validator() -> None:
         42,
         net_epoch_to_index_to_validator,
         LimitedDict(2),
+        set()  # Add this line to pass the `_initialized_keys` parameter
     )
 
 
-def test_process_rewards_all_net_validators_are_ideal() -> None:
+def test_process_rewards_all_net_validators_are_ideal(initialized_keys=None) -> None:
     class Beacon:
         def get_rewards(
             self,
@@ -128,6 +130,7 @@ def test_process_rewards_all_net_validators_are_ideal() -> None:
         42,
         net_epoch_to_index_to_validator,
         our_epoch_to_index_to_validator,
+        initialized_keys  # Add this argument
     )
 
     ideal_sources_count_after = metric_net_ideal_sources_count.collect()[0].samples[0].value  # type: ignore
@@ -170,7 +173,7 @@ def test_process_rewards_all_net_validators_are_ideal() -> None:
     assert isclose(metric_net_suboptimal_heads_rate_gauge.collect()[0].samples[0].value, 0.0)  # type: ignore
 
 
-def test_process_rewards_some_net_validators_are_ideal() -> None:
+def test_process_rewards_some_net_validators_are_ideal(initialized_keys=None) -> None:
     """10 validators.
     5 are perfect.
     2 have good source, good target but wrong head.
@@ -315,6 +318,7 @@ def test_process_rewards_some_net_validators_are_ideal() -> None:
         42,
         net_epoch_to_index_to_validator,
         our_epoch_to_index_to_validator,
+        initialized_keys  # Add this argument
     )
 
     ideal_sources_count_after = metric_net_ideal_sources_count.collect()[0].samples[0].value  # type: ignore
@@ -368,7 +372,7 @@ def test_process_rewards_some_net_validators_are_ideal() -> None:
     )
 
 
-def test_process_rewards_no_net_validator_is_ideal() -> None:
+def test_process_rewards_no_net_validator_is_ideal(initialized_keys=None) -> None:
     class Beacon:
         def get_rewards(
             self,
@@ -450,6 +454,7 @@ def test_process_rewards_no_net_validator_is_ideal() -> None:
         42,
         net_epoch_to_index_to_validator,
         our_epoch_to_index_to_validator,
+        initialized_keys  # Add this argument
     )
 
     ideal_sources_count_after = metric_net_ideal_sources_count.collect()[0].samples[0].value  # type: ignore

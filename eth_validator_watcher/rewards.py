@@ -170,6 +170,8 @@ def process_rewards(
     if epoch < 2:
         return
 
+    if _initialized_keys is None:
+        _initialized_keys = set()
     if len(_initialized_keys) > 0:
         for pubkey in _initialized_keys:
             if pubkey in initialized_keys:

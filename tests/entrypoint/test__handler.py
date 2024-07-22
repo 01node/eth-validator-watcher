@@ -237,6 +237,7 @@ def test_nominal() -> None:
         beacon_type: BeaconType,
         epoch_to_index_to_validator_index: LimitedDict,
         epoch: int,
+        _initialized_keys: set[str],  # Add the new parameter here
     ) -> set[int]:
         assert isinstance(beacon, Beacon)
         assert beacon_type is BeaconType.OLD_TEKU
@@ -331,6 +332,7 @@ def test_nominal() -> None:
         epoch: int,
         net_epoch2active_idx2val: dict[int, Validator],
         our_epoch2active_idx2val: dict[int, Validator],
+        initialized_keys  # Add this argument
     ) -> None:
         assert isinstance(beacon, Beacon)
         assert isinstance(beacon_type, BeaconType)

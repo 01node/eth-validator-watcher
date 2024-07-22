@@ -32,12 +32,10 @@ class ExitedValidators:
         self.__slack = slack
 
     def process(
-        self,
-        our_exited_unslashed_index_to_validator: dict[
-            int, Validators.DataItem.Validator
-        ],
-        our_withdrawal_index_to_validator: dict[int, Validators.DataItem.Validator],
-        _initialized_keys: set[str],
+            self,
+            our_exited_unslashed_index_to_validator: dict[int, Validators.DataItem.Validator],
+            our_withdrawal_index_to_validator: dict[int, Validators.DataItem.Validator],
+            _initialized_keys: set[str],
     ) -> None:
         """Process exited validators.
 
@@ -46,15 +44,22 @@ class ExitedValidators:
             key  : our exited validator index
             value: validator data corresponding to the validator index
         """
+        if _initialized_keys is None:
+            _initialized_keys = set()
 
-        for _key in _initialized_keys:
-            if _key not in initialized_keys:
-                key_exited_validators.labels(pubkey=_key)
-                initialized_keys.add(_key)
-        for _key in initialized_keys:
-            if _key not in _initialized_keys:
-                initialized_keys.remove(_key)
-                key_exited_validators.remove(pubkey=_key)
+        # Collect keys to add and remove
+        keys_to_add = [key for key in _initialized_keys if key not in initialized_keys]
+        keys_to_remove = [key for key in initialized_keys if key not in _initialized_keys]
+
+        # Add new keys
+        for _key in keys_to_add:
+            key_exited_validators.labels(pubkey=_key)
+            initialized_keys.add(_key)
+
+        # Remove old keys
+        for _key in keys_to_remove:
+            initialized_keys.remove(_key)
+            key_exited_validators.remove(_key)
 
         our_exited_unslashed_indexes = set(our_exited_unslashed_index_to_validator)
 
@@ -88,12 +93,7 @@ class ExitedValidators:
         self.__our_exited_unslashed_indexes = our_exited_unslashed_indexes
 
         for index in our_exited_indexes:
-            key_exited_validators.labels(pubkey=our_exited_unslashed_index_to_validator[index].pubkey).set(1)
-        for pubkey in initialized_keys:
-            found = False
-            for index in our_exited_indexes:
-                if our_exited_unslashed_index_to_validator[index].pubkey == pubkey:
-                    found = True
-                    break
-            if not found:
-                key_exited_validators.labels(pubkey=pubkey).set(0)
+            if index in our_exited_unslashed_index_to_validator:
+                key_exited_validators.labels(pubkey=our_exited_unslashed_index_to_validator[index].pubkey).set(1)
+            elif index in our_withdrawal_index_to_validator:
+                key_exited_validators.labels(pubkey=our_withdrawal_index_to_validator[index].pubkey).set(1)

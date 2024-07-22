@@ -7,7 +7,7 @@ from eth_validator_watcher.models import Validators
 Validator = Validators.DataItem.Validator
 
 
-def test_process_exited_validators():
+def test_process_exited_validators(initialized_keys=None):
     class Slack:
         def __init__(self):
             self.counter = 0
@@ -30,7 +30,9 @@ def test_process_exited_validators():
     exited_validators = ExitedValidators(slack)  # type: ignore
 
     exited_validators.process(
-        our_exited_unslashed_index_to_validator, our_withdrawal_index_to_validator
+        our_exited_unslashed_index_to_validator,
+        our_withdrawal_index_to_validator,
+        initialized_keys if initialized_keys is not None else set()  # Add this argument
     )
 
     assert metric_our_exited_validators_count.collect()[0].samples[0].value == 3  # type: ignore
@@ -46,13 +48,17 @@ def test_process_exited_validators():
         45: Validator(pubkey="0x3456", effective_balance=32000000000, slashed=False),
         48: Validator(pubkey="0x5432", effective_balance=32000000000, slashed=False),
     }
+
+    our_withdrawal_index_to_validator[48] = Validator(pubkey="0x5432", effective_balance=32000000000, slashed=False)
+
     exited_validators.process(
-        our_exited_unslashed_index_to_validator, our_withdrawal_index_to_validator
+        our_exited_unslashed_index_to_validator,
+        our_withdrawal_index_to_validator,
+        initialized_keys if initialized_keys is not None else set()  # Add this argument
     )
 
     assert metric_our_exited_validators_count.collect()[0].samples[0].value == 4  # type: ignore
     assert slack.counter == 1
-
     assert (
         exited_validators._ExitedValidators__our_exited_unslashed_indexes  # type: ignore
         == {44, 45, 48}

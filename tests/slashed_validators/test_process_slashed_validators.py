@@ -8,7 +8,7 @@ from eth_validator_watcher.slashed_validators import (
 Validator = Validators.DataItem.Validator
 
 
-def test_process_slashed_validators():
+def test_process_slashed_validators(initialized_keys=None):
     class Slack:
         def __init__(self):
             self.counter = 0
@@ -50,6 +50,7 @@ def test_process_slashed_validators():
         our_exited_slashed_index_to_validator,
         total_withdrawal_index_to_validator,
         our_withdrawal_index_to_validator,
+        initialized_keys if initialized_keys is not None else set()  # Add this argument
     )
 
     assert metric_total_slashed_validators_count.collect()[0].samples[0].value == 7  # type: ignore
@@ -86,6 +87,7 @@ def test_process_slashed_validators():
         our_exited_slashed_index_to_validator,
         total_withdrawal_index_to_validator,
         our_withdrawal_index_to_validator,
+        initialized_keys if initialized_keys is not None else set()  # Add this argument
     )
 
     assert metric_total_slashed_validators_count.collect()[0].samples[0].value == 8  # type: ignore
